@@ -1,12 +1,26 @@
 # Kaheet
 
+[![GitHub stars](https://img.shields.io/github/stars/pxtrez/kaheet?style=for-the-badge&logo=appveyor)](https://github.com/pxtrez/kaheet/stargazers)
+
+[![GitHub issues](https://img.shields.io/github/issues/pxtrez/kaheet?style=for-the-badge)](https://github.com/pxtrez/kaheet/issues)
+
+
+[![made with love](https://img.shields.io/badge/made%20with-%F0%9F%92%99-blue?style=for-the-badge)](https://github.com/pxtrez/kaheet)
+
+## Overview
+
 Kaheet is a free kahoot cheat made by [pxtrez](https://gihub.com/pxtrez)
+
+- [How to use](#How-to-use?)
+    * [Get quiz by name](#Get-quiz-by-name)
+    * [Cheat](#Cheat)
+- [Any bugs or problems?](#Any-bugs-or-problems?)
 
 ## How to use?
 
-To use the cheat, you need to enter the quiz ID. You can type it or search for it using [quiz name](#Get-quiz-name)
+To use the cheat, you need to enter the quiz ID. You can type it or search for it using [quiz name](#Get-quiz-by-name)
 
-### Get quiz name
+### Get quiz by name
 
 1. Join Kahoot Game
 2. Open console and paste script:
@@ -36,3 +50,7 @@ fetch("http://kaheet.herokuapp.com/kaheet/script/cheat")
 * Wrong answers should be darker than the correct ones.
 
 ![image](./docs/example.png)
+
+## Any bugs or problems?
+
+create an issue
