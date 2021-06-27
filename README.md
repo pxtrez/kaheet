@@ -26,7 +26,7 @@ To use the cheat, you need to enter the quiz ID. You can type it or search for i
 2. Open console and paste script:
 
 ```ts
-fetch("http://kaheet.herokuapp.com/kaheet/script/find")
+fetch("https://kaheet.herokuapp.com/kaheet/script/find")
 .then((r) => r.text()
 .then((t) => eval(t)))
 ```
@@ -40,7 +40,7 @@ fetch("http://kaheet.herokuapp.com/kaheet/script/find")
 2. Open console and paste script:
 
 ```ts
-fetch("http://kaheet.herokuapp.com/kaheet/script/cheat")
+fetch("https://kaheet.herokuapp.com/kaheet/script/cheat")
 .then((r) => r.text()
 .then((t) => eval(t)))
 ```
