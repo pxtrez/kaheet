@@ -51,6 +51,12 @@ fetch("https://kaheet.herokuapp.com/kaheet/script/cheat")
 
 ![image](./docs/example.png)
 
+## Bugs
+
+Known unpatched bugs.
+
+1. When the teacher chooses: random answers, the kaheet is in trouble. Highlights wrong answers and themes do not work properly. Then you should read the correct answer in the upper left corner, in the Correct tab.
+
 ## Any bugs or problems?
 
 create an issue
