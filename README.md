@@ -4,7 +4,6 @@
 
 [![GitHub issues](https://img.shields.io/github/issues/pxtrez/kaheet?style=for-the-badge)](https://github.com/pxtrez/kaheet/issues)
 
-
 [![made with love](https://img.shields.io/badge/made%20with-%F0%9F%92%99-blue?style=for-the-badge)](https://github.com/pxtrez/kaheet)
 
 ## Overview
@@ -40,7 +39,7 @@ fetch("https://kaheet.herokuapp.com/kaheet/script/find")
 2. Open console and paste script:
 
 ```ts
-fetch("https://kaheet.herokuapp.com/kaheet/script/cheat")
+fetch("https://raw.githubusercontent.com/pxtrez/kaheet/src/script.min.js")
 .then((r) => r.text()
 .then((t) => eval(t)))
 ```
@@ -55,7 +54,7 @@ fetch("https://kaheet.herokuapp.com/kaheet/script/cheat")
 
 Known unpatched bugs.
 
-1. When the teacher chooses: random answers, the kaheet is in trouble. Highlights wrong answers and themes do not work properly. Then you should read the correct answer in the upper left corner, in the Correct tab.
+1. When the teacher chooses: random answers, the kaheet is in trouble. Highlights wrong answers and themes do not work properly. Then you should read the correct answer in the upper left corner, in the Correct tab or check console.
 
 ## Any bugs or problems?
 
