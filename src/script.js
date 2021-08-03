@@ -1,6 +1,4 @@
-let type;
-let data = [];
-
+let quizType;
 
 // -------------------------- notif -------------------------- //
 // Show welcome notification
@@ -21,16 +19,16 @@ function notif() {
 
 function getInput() {
     return new Promise((resolve, reject) => {
-        let input = prompt(
-            `   📜 Enter the last part of link, that's visible on the teacher's screen.
-    ❓  Where's quizID?
-    🔗 https://play.kahoot.it/v2/lobby?quizId= [ quizID ]
-    🔗 https://kahoot.it/challenge/ [ quizID ]
-    ⚠️  Remember that the quizID is not the same as the quiz join code
-    ⚠️  Getting answers by quiz join code is not supported yet
-    ⚠️  Kaheet is 100% safe, which means it's not a virus or crap like that
-    ❌ TO EXIT CLICK F5
-        `);
+        let input = prompt(`
+📜 Enter the last part of link, that's visible on the teacher's screen.
+❓  Where's quizID?
+🔗 https://play.kahoot.it/v2/lobby?quizId= [ quizID ]
+🔗 https://kahoot.it/challenge/ [ quizID ]
+⚠️  Remember that the quizID is not the same as the quiz join code
+⚠️  Getting answers by quiz join code is not supported yet
+⚠️  Kaheet is 100% safe, which means it's not a virus or crap like that
+❌ TO EXIT CLICK F5
+            `);
         input.trim() !== "" ? resolve(input) : reject('Empty input');
     });
 }
@@ -43,7 +41,7 @@ function getInput() {
 // -------------------------- checkInput -------------------------- //
 // Check quizID
 
-async function checkInput(input) {
+function checkInput(input) {
     return new Promise(async(resolve, reject) => {
         const kahoot = await fetch(`https://kahoot.it/rest/kahoots/${input}`);
 
@@ -57,12 +55,14 @@ async function checkInput(input) {
                 challenge.status === 400
             ) {
                 console.log(`⚠️  Error: QuizID not found!`);
-                reject('QuizID not found');
+                return reject('QuizID not found');
             } else {
-                type = "challenge";
-                checkInput(json.challenge.kahoot.uuid);
+                quizType = "challenge";
+                console.log(`✔️  QuizID found!`);
+                resolve(json.challenge.kahoot);
             }
         } else {
+            console.log(`✔️  QuizID found!`);
             const json = await kahoot.json();
             resolve(json);
         }
@@ -115,11 +115,12 @@ function parse(json) {
             returnData.push(questionData);
         });
         answersToConsole(returnData);
-        if (type === "challenge") {
+        if (quizType === "challenge") {
             alert(`Ugh! We've detected, that you're running challenge mode!
 For all answers, you have to check the console!`);
             alert(`If you want to have time to search current question,
 you can pause quiz timers by typing 'pause()' in console!`);
+            resolve(true)
         } else {
             resolve(returnData);
         }
@@ -133,7 +134,9 @@ you can pause quiz timers by typing 'pause()' in console!`);
 // -------------------------- highlight -------------------------- //
 // Show correct answers
 
-function highlight(data) {
+function highlight(data, ) {
+    if (typeof data === 'boolean') return;
+
     setInterval(() => {
         let index;
         try {
@@ -143,10 +146,12 @@ function highlight(data) {
         } catch (e) {}
 
         if (index) {
-            let type = data[index].type;
-            let check = data[index].check;
-            let correct = data[index].correct;
-            let answers = data[index].answers;
+            let {
+                type,
+                check,
+                correct,
+                answers
+            } = data[index];
 
             if (
                 type !== "content" &&
@@ -159,11 +164,11 @@ function highlight(data) {
                 if (box) {
                     let text = answers.join("</p><p>");
                     if (box.style.display !== 'grid') {
-                        elementModifier.display(box, 'grid');
-                        elementModifier.fontSize(box, "25px");
-                        elementModifier.textAlign(box, 'left');
-                        elementModifier.lineHeight(box, '1.3');
-                        elementModifier.text(box, `<p><p style="font-size: xxx-large;color: #00fff8;">Correct ${correct.length}/${correct.length + check.length} answers:</p><p>${text}</p><p style="color: lime;">Question type: ${type}`);
+                        box.style.display = 'grid';
+                        box.style.fontSize = "25px";
+                        box.style.textAlign = 'left';
+                        box.style.lineHeight = '1.3';
+                        box.innerHTML = `<p><p style="font-size: xxx-large;color: #00fff8;">Correct ${correct.length}/${correct.length + check.length} answers:</p><p>${text}</p><p style="color: lime;">Question type: ${type}`;
                     }
                 }
 
@@ -180,9 +185,9 @@ function highlight(data) {
                                 `[data-functional-selector="answer-${i}"]`
                             );
                             if (element.style.transition !== '0.5s') {
-                                elementModifier.transition(element, '0.5s');
-                                elementModifier.opacity(element, 0.2);
-                                elementModifier.filter(element, "blur(3px) grayscale(1)");
+                                element.style.transition = '0.5s';
+                                element.style.opacity = 0.2;
+                                element.style.filter = "blur(3px) grayscale(1)";
                             }
                         });
 
@@ -190,10 +195,10 @@ function highlight(data) {
                             let element = document.querySelector(
                                 `[data-functional-selector="answer-${i}"]`);
                             if (element.style.transition !== '0.5s') {
-                                elementModifier.transition(element, '0.5s');
-                                elementModifier.filter(element, 'contrast(2)');
-                                elementModifier.border(element, 'lime solid 3px');
-                                elementModifier.borderRadius(element, '5px');
+                                element.style.transition = '0.5s';
+                                element.style.filter = 'contrast(2)';
+                                element.style.border = 'lime solid 3px';
+                                element.style.borderRadius = '5px';
                             }
                         });
                     }
@@ -236,8 +241,7 @@ function answersToConsole(json) {
         if (!question.skip) {
             console.log(`
 %c❓ Question: %c${question.question}
-%c📝 Answers (${question.answers.length}): %c\n${question.answers.join('\n')}
-`,
+%c📝 Answers (${question.answers.length}): %c\n${question.answers.join('\n')}`,
                 'color:orange;font-size:15px;',
                 'color:white;font-size:20px;',
                 'color:yellow;font-size:15px;',
@@ -252,70 +256,18 @@ function answersToConsole(json) {
 
 
 
-// -------------------------- element values change functions -------------------------- //
-
-let elementModifier = {
-    text(element, value) {
-        element.innerHTML = value;
-    },
-    color(element, value) {
-        element.style.color = value;
-    },
-    backgroundColor(element, value) {
-        element.style.backgroundColor = value;
-    },
-    backgroundImage(element, value) {
-        element.style.backgroundImage = `url(${value})`;
-    },
-    backgroundSize(element, value) {
-        element.style.backgroundSize = value;
-    },
-    border(element, value) {
-        element.style.border = value;
-    },
-    borderRadius(element, value) {
-        element.style.borderRadius = value;
-    },
-    opacity(element, value) {
-        element.style.opacity = value;
-    },
-    transition(element, value) {
-        element.style.transition = value;
-    },
-    filter(element, value) {
-        element.style.filter = value;
-    },
-    fontSize(element, value) {
-        element.style.fontSize = value;
-    },
-    display(element, value) {
-        element.style.display = value;
-    },
-    textAlign(element, value) {
-        element.style.textAlign = value;
-    },
-    lineHeight(element, value) {
-        element.style.lineHeight = value;
-    }
-};
-// -------------------------- element values change functions -------------------------- //
-
-
-
-
-
 // -------------------------- doFunc -------------------------- //
 // Check if element exists and do function
 
 function doFunc(selector, functions) {
+    // You can modify this values
     let main = "black";
     let text = "white";
-    let background = "https://gifimage.net/wp-content/uploads/2017/09/black-and-white-gif-background-tumblr-7.gif";
+    let background = "url('https://gifimage.net/wp-content/uploads/2017/09/black-and-white-gif-background-tumblr-7.gif')";
     let border = "lime dashed 3px";
-
+    //
     let element = document.querySelector(selector);
     if (element) {
-        console.log()
         functions.forEach(func => {
             eval(func);
         });
@@ -337,7 +289,7 @@ function theme() {
                 '[data-functional-selector="nickname-status-bar"]'
             ],
             do: [
-                "elementModifier.text(element, 'Kaheet has been injected!')"
+                "element.innerHTML = 'Kaheet has been injected!'",
             ]
         },
         nav: {
@@ -345,8 +297,8 @@ function theme() {
                 '[data-functional-selector="controller-top-bar"]'
             ],
             do: [
-                "elementModifier.backgroundColor(element, main)",
-                "elementModifier.color(element, text)"
+                "element.style.backgroundColor = main",
+                "element.style.color = text"
             ]
         },
         footer: {
@@ -355,8 +307,8 @@ function theme() {
                 '#root > div.controller__AppWrapper-sc-1m4rw0k-0.hHwuuw > main > div'
             ],
             do: [
-                "elementModifier.backgroundColor(element, main)",
-                "elementModifier.color(element, text)"
+                "element.style.backgroundColor = main",
+                "element.style.color = text"
             ]
         },
         contentBg: {
@@ -364,7 +316,7 @@ function theme() {
                 '#root > div.controller__AppWrapper-sc-1m4rw0k-0.hHwuuw > main > div.question__PageMainContent-sc-12j7dwx-1.fMGBvU',
             ],
             do: [
-                "elementModifier.backgroundColor(element, main)",
+                "element.style.backgroundColor = main",
             ]
         },
         bg: {
@@ -378,8 +330,8 @@ function theme() {
                 '#root > div.controller__AppWrapper-sc-1m4rw0k-0.hHwuuw > div > main',
             ],
             do: [
-                "elementModifier.backgroundImage(element, background)",
-                "elementModifier.backgroundSize(element, 'cover')"
+                "element.style.backgroundImage = background",
+                "element.style.backgroundSize = 'cover'"
             ]
         },
         dragbox: {
@@ -390,7 +342,7 @@ function theme() {
                 '#root > div.controller__AppWrapper-sc-1m4rw0k-0.hHwuuw > main > div.question__PageMainContent-sc-12j7dwx-1.fMGBvU > div > section > div:nth-child(4)',
             ],
             do: [
-                "elementModifier.border(element, border)"
+                "element.style.border = border"
             ]
         },
     };
@@ -398,9 +350,11 @@ function theme() {
     setInterval(() => {
         Object.keys(elements).forEach((element, index) => {
             let name = Object.keys(elements)[index];
+
             elements[name].elems.forEach(selector => {
                 doFunc(selector, elements[name].do);
             });
+
         });
     });
 }
@@ -416,15 +370,13 @@ function theme() {
     theme();
     notif();
 
-    const input = await getInput()
+    const input = await getInput();
     const json = await checkInput(input);
-    const parsed = await parse(json)
+    const parsed = await parse(json);
 
     highlight(parsed);
 
     console.log(`If you want to have time to search current question,
 you can pause quiz timers by typing 'pause()' in console!`)
-
-    return true;
 })();
 // -------------------------- init -------------------------- //
