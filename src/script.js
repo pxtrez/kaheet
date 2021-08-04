@@ -7,7 +7,7 @@ function notif() {
     console.clear();
     console.log(`%c\nKaheet made by pxtrez\n`, "color:#ff66ff");
     console.log(`Thank you for using Kaheet! I recommend that you read the docs before use!\nhttps://pxtrez.github.io/kaheet/\nPheaServices © 2021\nEducational purposes only!`);
-    alert(`Thank you for using Kaheet!\nI recommend reading the docs before using!\nhttps://pxtrez.github.io/\nPheaServices © 2021`);
+    alert(`Thank you for using Kaheet!\nI recommend reading the docs before using!\nhttps://pxtrez.github.io/kaheet/\nPheaServices © 2021`);
 }
 // -------------------------- notif -------------------------- //
 
@@ -134,7 +134,7 @@ you can pause quiz timers by typing 'pause()' in console!`);
 // -------------------------- highlight -------------------------- //
 // Show correct answers
 
-function highlight(data, ) {
+function highlight(data) {
     if (typeof data === 'boolean') return;
 
     setInterval(() => {
