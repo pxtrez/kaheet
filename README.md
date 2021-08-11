@@ -55,6 +55,7 @@ fetch("https://raw.githubusercontent.com/pxtrez/kaheet/main/src/script.min.js")
 Known unpatched bugs.
 
 1. When the teacher chooses: random answers, the kaheet is in trouble. Highlights wrong answers and themes do not work properly. Then you should read the correct answer in the upper left corner, in the Correct tab or check console.
+2. Cheat doesn't work for private quizzes
 
 ## Any bugs or problems?
 
