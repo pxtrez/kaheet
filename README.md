@@ -40,7 +40,7 @@ fetch("https://raw.githubusercontent.com/pxtrez/kaheet/main/src/script.min.js")
 
 QuizId is a string of random characters visible in the URL at the top of the teacher / host screen.
 
-![quizid on teachers screeen](.docs/quizid.png)
+![quizid on teachers screeen](./docs/quizid.png)
 
 If you don't see it, please use [this](#Get-quiz-by-name) script
 
