@@ -1,4 +1,4 @@
-let lastQuestion = 0;
+let lastQuestion: number = 0;
 
 import { Quiz, Question, Choice, Answer } from "./types/types";
 
@@ -64,8 +64,6 @@ const getQuestion = (data: Quiz): Question | any => {
 
 const getAnswersFromQuestion = (data: Question): any =>
     data.choices?.map((choice: Choice, index: number) => {
-        if (!choice.correct) return;
-
         return {
             index: index,
             answer: choice.answer,
@@ -75,34 +73,32 @@ const getAnswersFromQuestion = (data: Question): any =>
 
 const highlight = (quiz: Quiz) => {
     const data = getQuestion(quiz);
-
-    if (!data.answer) return;
-
     const answers = getAnswersFromQuestion(data);
 
-    if (data.type === "quiz" || data.type === "multiple_select_quiz")
-        answers.forEach((choice: Answer) => {
-            const { index, answer } = choice;
-
-            const answerElement = document.querySelector(
-                `[data-functional-selector="answer-${index}"]`
-            ) as HTMLElement;
-
-            if (answerElement == null) return;
-
-            answerElement.style.border = "lime solid 10px";
-            answerElement.style.borderRadius = "5px";
-            answerElement.innerHTML = `<div style="display:grid;padding:5px;"><span style="color:white;font-size:150%;">${data.question}:</span><span style="color:lime;font-size:120%;">${answer}</span></div>`;
-        });
-    else if (data.type === "open_ended") {
+    if (data.type === "open_ended") {
         const element = document.querySelector(
             `[data-functional-selector="text-answer-input"]`
         ) as HTMLInputElement;
 
         if (element) element.placeholder = answers[0].answer;
     } else
-        alert(`${data.question}
-    ${answers.map((answer: Answer) => answer.answer).join("\n")}`);
+        try {
+            answers.forEach((choice: Answer) => {
+                if (!choice.correct) return;
+
+                const { index, answer } = choice;
+
+                const answerElement = document.querySelector(
+                    `[data-functional-selector="answer-${index}"]`
+                ) as HTMLElement;
+
+                if (answerElement == null) return;
+
+                answerElement.style.border = "lime solid 10px";
+                answerElement.style.borderRadius = "5px";
+                answerElement.innerHTML = `<div style="display:grid;padding:5px;"><span style="color:white;font-size:150%;">${data.question}:</span><span style="color:lime;font-size:120%;">${answer}</span></div>`;
+            });
+        } catch (e) {}
 
     consoleAnswers(data.question, answers);
 };
@@ -121,7 +117,7 @@ const consoleAnswers = (question: string, answers: Answer[]) => {
         "color:orange;font-size:15px;",
         "color:white;font-size:20px;",
         "color:yellow;font-size:15px;",
-        "color:white;font-size:20px;border:orange 1px solid;"
+        "color:white;font-size:20px;"
     );
 };
 
