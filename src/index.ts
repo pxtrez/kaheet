@@ -1,9 +1,13 @@
-let lastQuestion: number = 0;
-
 import { Quiz, Question, Choice, Answer } from "./types/types";
+
+let lastQuestion = 0;
 
 const getInput = () => {
     const input: string | null = prompt(`
+👋 Hi, ${
+        JSON.parse(localStorage.getItem("kahoot-game_session") || "{}")
+            .playerName || "Guest"
+    }!
 📜 Enter the last part of link, that's visible on the teacher's screen.
 ❓  Where's quizID?
 🔗 https://play.kahoot.it/v2/lobby?quizId= [ quizID ]
@@ -19,6 +23,9 @@ const getInput = () => {
 const checkForChallenge = (): boolean => {
     return window.location.href.includes("challenge");
 };
+
+const getChallengeId = (): string =>
+    window.location.href.split("challenge/")[1].split("/")[0];
 
 const getQuestionNumber = (): number =>
     JSON.parse(localStorage.getItem("kahoot-game_session") || "{}")
@@ -47,23 +54,8 @@ const getQuizData = async (input: string): Promise<Quiz> => {
     return isChallenge ? result.challenge.kahoot : result;
 };
 
-const getQuestion = (data: Quiz): Question | any => {
-    const index = getQuestionNumber();
-
-    const question: Question = data.questions[index];
-
-    const hasCorrectAnswers = [
-        "content",
-        "multiple_select_poll",
-        "survey",
-    ].some((type: string) => !(question.type === type));
-
-    if (hasCorrectAnswers) return question;
-    else return;
-};
-
-const getAnswersFromQuestion = (data: Question): any =>
-    data.choices?.map((choice: Choice, index: number) => {
+const getAnswersFromQuestion = (question: Question): any =>
+    question.choices?.map((choice: Choice, index: number) => {
         return {
             index: index,
             answer: choice.answer,
@@ -71,49 +63,71 @@ const getAnswersFromQuestion = (data: Question): any =>
         } as Answer;
     });
 
-const highlight = (quiz: Quiz) => {
-    const data = getQuestion(quiz);
-    const answers = getAnswersFromQuestion(data);
+const validateQuestion = (question: Question): boolean => {
+    if (
+        ["content", "multiple_select_poll", "survey"].some(
+            (type: string) => question.type !== type
+        ) &&
+        question.choices
+    )
+        return true;
+    else return false;
+};
 
-    if (data.type === "open_ended") {
+const highlight = (quiz: Quiz) => {
+    const data = quiz.questions;
+
+    if (checkForChallenge()) {
+        data.forEach((question: Question) => {
+            if (validateQuestion(question))
+                consoleAnswers(
+                    question.question,
+                    getAnswersFromQuestion(question)
+                );
+        });
+        return;
+    }
+
+    const question: Question = data[getQuestionNumber()];
+    if (!validateQuestion(question)) return;
+
+    const answers = getAnswersFromQuestion(question);
+
+    if (question.type === "open_ended") {
         const element = document.querySelector(
             `[data-functional-selector="text-answer-input"]`
         ) as HTMLInputElement;
 
-        if (element) element.placeholder = answers[0].answer;
+        if (element != null) element.placeholder = answers[0].answer;
     } else
-        try {
-            answers.forEach((choice: Answer) => {
-                if (!choice.correct) return;
+        answers.forEach((choice: Answer) => {
+            if (!choice.correct) return;
 
-                const { index, answer } = choice;
+            const { index, answer } = choice;
 
-                const answerElement = document.querySelector(
-                    `[data-functional-selector="answer-${index}"]`
-                ) as HTMLElement;
+            const answerElement = document.querySelector(
+                `[data-functional-selector="answer-${index}"]`
+            ) as HTMLElement;
 
-                if (answerElement == null) return;
-
+            if (answerElement != null) {
                 answerElement.style.border = "lime solid 10px";
                 answerElement.style.borderRadius = "5px";
-                answerElement.innerHTML = `<div style="display:grid;padding:5px;"><span style="color:white;font-size:150%;">${data.question}:</span><span style="color:lime;font-size:120%;">${answer}</span></div>`;
-            });
-        } catch (e) {}
+                answerElement.innerHTML = `<div style="display:grid;padding:5px;"><span style="color:white;font-size:150%;">${question.question}:</span><span style="color:lime;font-size:120%;">${answer}</span></div>`;
+            }
+        });
 
-    consoleAnswers(data.question, answers);
+    if (checkForNewQuestion()) consoleAnswers(question.question, answers);
 };
 
 const consoleAnswers = (question: string, answers: Answer[]) => {
-    if (!checkForNewQuestion()) return;
-
-    const parsed_answers = answers.map((answer: Answer) => {
-        if (answer.correct) return answer.answer;
-    });
+    const correctAnswers = answers.filter((answer: Answer) => answer.correct);
 
     console.log(
         `
 %c❓ Question: %c${question}
-%c📝 Answers (${parsed_answers.length}): %c\n${parsed_answers.join("\n")}`,
+%c📝 Answers (${correctAnswers.length}): %c\n${correctAnswers
+            .map((answer) => answer.answer)
+            .join("\n")}`,
         "color:orange;font-size:15px;",
         "color:white;font-size:20px;",
         "color:yellow;font-size:15px;",
@@ -122,10 +136,22 @@ const consoleAnswers = (question: string, answers: Answer[]) => {
 };
 
 (async () => {
-    const input = getInput();
-    const quiz = await getQuizData(input);
+    const promptQuizId = async () => {
+        const input = getInput();
+        const quiz = await getQuizData(input);
 
-    setInterval(() => {
+        setInterval(() => {
+            highlight(quiz);
+        }, 500);
+    };
+
+    if (checkForChallenge()) {
+        const quizid = getChallengeId();
+        if (quizid == undefined) promptQuizId();
+
+        const quiz = await getQuizData(quizid);
         highlight(quiz);
-    }, 500);
+    } else {
+        promptQuizId();
+    }
 })();
