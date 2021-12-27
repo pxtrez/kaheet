@@ -3,6 +3,7 @@ const obfuscator = require("webpack-obfuscator");
 
 module.exports = {
     entry: "./src/index.ts",
+    mode: "production",
     module: {
         rules: [
             {

@@ -4,8 +4,9 @@ export interface Quiz {
 
 export interface Question {
     type: string;
-    choices?: [];
+    choices: [];
     question: string;
+    layout: string;
 }
 
 export interface Choice {
@@ -17,4 +18,8 @@ export interface Answer {
     index: number;
     answer: string;
     correct: boolean;
+}
+
+export interface QuestionNumber {
+    completedGameBlockIndex: number;
 }

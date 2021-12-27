@@ -1,40 +1,60 @@
-import { Quiz, Question, Choice, Answer } from "./types/types";
+import { Quiz, Question, Choice, Answer, QuestionNumber } from "./types/types";
 
-let lastQuestion = 0;
+let lastQuestion = -1;
 
 const getInput = () => {
     const input: string | null = prompt(`
 👋 Hi, ${
-        JSON.parse(localStorage.getItem("kahoot-game_session") || "{}")
+        JSON.parse(localStorage.getItem("kahoot-game_session") || "")
             .playerName || "Guest"
     }!
 📜 Enter the last part of link, that's visible on the teacher's screen.
-❓  Where's quizID?
-🔗 https://play.kahoot.it/v2/lobby?quizId= [ quizID ]
-🔗 https://kahoot.it/challenge/ [ quizID ]
+❓ => Example:
+🔗 https://play.kahoot.it/v2/lobby?quizId= [here]
+
 ⚠️  Remember that the quizID is not the quiz join code (e.g. 638592)
 ❌ TO EXIT CLICK F5
 `);
     if (input == null) throw "Empty input";
-
+    if (new RegExp(/^\d+$/g).test(input.replace(/\s/g, "")))
+        throw "You cannot use the quiz join code";
     return input;
 };
 
-const checkForChallenge = (): boolean => {
-    return window.location.href.includes("challenge");
+const checkForChallenge = (): boolean =>
+    new RegExp(/\/\/kahoot\.it\/challenge\//g).test(window.location.href);
+
+const getChallengeId = (): string => {
+    const url = window.location.href;
+
+    if (new RegExp(/\/\/kahoot\.it\/challenge\//g).test(url)) {
+        const challenge = new RegExp(
+            /\/\/kahoot\.it\/challenge\/.*?\?challenge-id=/g
+        ).test(url)
+            ? url.match(
+                  /(?<=(\/\/kahoot\.it\/challenge\/.*?\?challenge-id=)).*$/g
+              )
+            : url.match(/(?<=(\/\/kahoot\.it\/challenge\/)).*$/g);
+        return challenge != null ? challenge[0] : "";
+    } else return "";
 };
 
-const getChallengeId = (): string =>
-    window.location.href.split("challenge/")[1].split("/")[0];
-
 const getQuestionNumber = (): number =>
-    JSON.parse(localStorage.getItem("kahoot-game_session") || "{}")
-        .questionNumber;
+    checkForChallenge()
+        ? (
+              Object.values(
+                  JSON.parse(
+                      localStorage.getItem("kahoot-challenge_session") || "{}"
+                  )
+              ).at(-1) as QuestionNumber
+          ).completedGameBlockIndex
+        : JSON.parse(localStorage.getItem("kahoot-game_session") || "{}")
+              .questionNumber;
 
 const checkForNewQuestion = (): boolean => {
     const currentQuestion = getQuestionNumber();
 
-    if (currentQuestion !== lastQuestion) {
+    if (currentQuestion != lastQuestion) {
         lastQuestion = currentQuestion;
         return true;
     } else return false;
@@ -54,80 +74,128 @@ const getQuizData = async (input: string): Promise<Quiz> => {
     return isChallenge ? result.challenge.kahoot : result;
 };
 
-const getAnswersFromQuestion = (question: Question): any =>
-    question.choices?.map((choice: Choice, index: number) => {
-        return {
-            index: index,
-            answer: choice.answer,
-            correct: choice.correct,
-        } as Answer;
-    });
+const parseAnswers = (question: Question): Answer[] =>
+    question.choices
+        ?.filter((choice) => (<Choice>choice).correct)
+        .map((choice, index: number) => {
+            const choiceParsed = <Choice>choice;
+            return question.type === "jumble"
+                ? {
+                      index: question.choices.indexOf(choice),
+                      answer: `${index + 1}. ${choiceParsed.answer}`,
+                      correct: choiceParsed.correct,
+                  }
+                : {
+                      index: question.choices.indexOf(choice),
+                      answer: choiceParsed.answer,
+                      correct: choiceParsed.correct,
+                  };
+        });
 
-const validateQuestion = (question: Question): boolean => {
-    if (
-        ["content", "multiple_select_poll", "survey"].some(
-            (type: string) => question.type !== type
-        ) &&
-        question.choices
-    )
-        return true;
-    else return false;
+const validateQuestion = (question: Question): boolean =>
+    !["content", "multiple_select_poll", "survey"].some(
+        (type: string) => question.type == type
+    ) && question.choices != null;
+
+const getCurrentQuestion = (title: string, data): Question =>
+    data.find((question: Question) => question.question === title);
+
+const getAnswerElement = (answer: Answer, length: number): HTMLElement => {
+    if (checkForChallenge()) {
+        const dummy = document.createElement("span");
+        dummy.innerHTML = answer.answer;
+
+        return Array.from(Array(length).keys())
+            .map(
+                (index) =>
+                    (document.querySelector(
+                        `[data-functional-selector="answer-${index}"]`
+                    ) ||
+                        document.querySelectorAll("[shape]")[
+                            index
+                        ]) as HTMLElement
+            )
+            .find((element: HTMLElement) =>
+                element.innerText
+                    .replace(/\s/g, "")
+                    .includes(dummy.innerText.replace(/\s/g, ""))
+            ) as HTMLElement;
+    } else {
+        return document.querySelector(
+            `[data-functional-selector="answer-${answer.index}"]`
+        ) as HTMLElement;
+    }
 };
 
-const highlight = (quiz: Quiz) => {
-    const data = quiz.questions;
-
-    if (checkForChallenge()) {
-        data.forEach((question: Question) => {
-            if (validateQuestion(question))
-                consoleAnswers(
-                    question.question,
-                    getAnswersFromQuestion(question)
-                );
-        });
-        return;
-    }
-
-    const question: Question = data[getQuestionNumber()];
-    if (!validateQuestion(question)) return;
-
-    const answers = getAnswersFromQuestion(question);
+const highlight = (question: Question) => {
+    const answers = parseAnswers(question);
 
     if (question.type === "open_ended") {
-        const element = document.querySelector(
+        const element = (document.querySelector(
             `[data-functional-selector="text-answer-input"]`
-        ) as HTMLInputElement;
+        ) || document.querySelector("input")) as HTMLInputElement;
 
-        if (element != null) element.placeholder = answers[0].answer;
+        if (element != null) {
+            element.placeholder = answers[0].answer;
+        }
     } else
         answers.forEach((choice: Answer) => {
-            if (!choice.correct) return;
-
-            const { index, answer } = choice;
-
-            const answerElement = document.querySelector(
-                `[data-functional-selector="answer-${index}"]`
-            ) as HTMLElement;
+            const answerElement =
+                question.layout == "TRUE_FALSE"
+                    ? (document.querySelector(
+                          `[data-functional-selector="answer-0"]`
+                      ) as HTMLElement)
+                    : getAnswerElement(choice, question.choices.length);
 
             if (answerElement != null) {
                 answerElement.style.border = "lime solid 10px";
                 answerElement.style.borderRadius = "5px";
-                answerElement.innerHTML = `<div style="display:grid;padding:5px;"><span style="color:white;font-size:150%;">${question.question}:</span><span style="color:lime;font-size:120%;">${answer}</span></div>`;
+                answerElement.innerHTML = `<div style="display:grid;padding:5px;"><span style="color:white;font-size:150%;">${question.question}:</span><span style="color:lime;font-size:120%;">${choice.answer}</span></div>`;
             }
         });
-
-    if (checkForNewQuestion()) consoleAnswers(question.question, answers);
 };
 
-const consoleAnswers = (question: string, answers: Answer[]) => {
-    const correctAnswers = answers.filter((answer: Answer) => answer.correct);
+const showAnswers = (quiz: Quiz) => {
+    const data = quiz.questions;
+    let currentQuestion;
+
+    if (checkForChallenge()) {
+        const element = document.querySelector(
+            `[data-functional-selector="block-title"]`
+        ) as HTMLInputElement;
+
+        if (element != null) {
+            currentQuestion = getCurrentQuestion(element.innerHTML, data);
+        }
+    } else {
+        currentQuestion =
+            data[getQuestionNumber() != null ? getQuestionNumber() : 0];
+    }
+
+    if (currentQuestion == null || !validateQuestion(currentQuestion)) return;
+
+    highlight(currentQuestion);
+
+    if (checkForNewQuestion()) {
+        consoleAnswers(currentQuestion);
+        if (currentQuestion.type === "jumble")
+            alert(
+                parseAnswers(currentQuestion)
+                    .map((answer: Answer) => answer.answer)
+                    .join("\n")
+            );
+    }
+};
+
+const consoleAnswers = (question: Question) => {
+    const correctAnswers = parseAnswers(question).map(
+        (answer: Answer) => answer.answer
+    );
 
     console.log(
         `
-%c❓ Question: %c${question}
-%c📝 Answers (${correctAnswers.length}): %c\n${correctAnswers
-            .map((answer) => answer.answer)
-            .join("\n")}`,
+%c❓ Question: %c${question.question}
+%c📝 Answers (${correctAnswers.length}): %c\n${correctAnswers.join("\n")}`,
         "color:orange;font-size:15px;",
         "color:white;font-size:20px;",
         "color:yellow;font-size:15px;",
@@ -135,23 +203,11 @@ const consoleAnswers = (question: string, answers: Answer[]) => {
     );
 };
 
-(async () => {
-    const promptQuizId = async () => {
-        const input = getInput();
-        const quiz = await getQuizData(input);
+let quizid = checkForChallenge() ? getChallengeId() : getInput();
+if (quizid == "") quizid = getInput();
 
-        setInterval(() => {
-            highlight(quiz);
-        }, 500);
-    };
-
-    if (checkForChallenge()) {
-        const quizid = getChallengeId();
-        if (quizid == undefined) promptQuizId();
-
-        const quiz = await getQuizData(quizid);
-        highlight(quiz);
-    } else {
-        promptQuizId();
-    }
-})();
+getQuizData(quizid).then((quiz: Quiz) => {
+    setInterval(() => {
+        showAnswers(quiz);
+    }, 500);
+});
